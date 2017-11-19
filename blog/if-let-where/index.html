@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Dealing with Swift's Pyramid of Doom &#8211; iOSDev.NYC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Today we continue topic of avoiding Swift's "Pyramid of Doom" that we started in previous post about `guard` statement.">
+    <meta name="author" content="Mariusz Wisniewski"> 
+    <meta name="keywords" content="iOS,, Swift">
+    <link rel="canonical" href="http://iosdev.nyc/blog/if-let-where/">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css " type="text/css">
+
+    <!-- Fonts -->
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300' rel='stylesheet' type='text/css'> 
+    
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet"> 
+    
+
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Dealing with Swift's Pyramid of Doom">
+    <meta property="og:description" content="A place to go for all iOS developers">
+    <meta property="og:url" content="http://iosdev.nyc/blog/if-let-where/">
+    <meta property="og:site_name" content="iOSDev.NYC">
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/images/icons/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/images/icons/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/images/icons/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/images/icons/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/images/icons/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/icons/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/images/icons/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/icons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/images/icons/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/images/icons/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/images/icons/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/images/icons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/images/icons/favicon-32x32.png" sizes="32x32">
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+</head>
+<body class="animated fade-in-down">
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+    <div class="mt2 wrap">
+        <div class="measure">
+            <a href="/" class="site-title">iOSDev.NYC</a>
+            <nav class="site-nav right">
+                <a href="/">Home</a>
+<a href="/about/">About</a>
+<a href="/contact/">Contact</a>
+
+            </nav>
+            <div class="clearfix"></div>
+             
+                <div class="social-icons">
+  <div class="left">
+    
+      <a class="fa fa-github" href="https://github.com/MariuszWisniewski"></a>
+    
+    
+    <a class="fa fa-rss" href="/feed.xml"></a>
+    
+      <a class="fa fa-twitter" href="https://twitter.com/lifcio"></a>
+    
+    
+    
+      <a class="fa fa-envelope" href="mailto:&#109;&#097;&#114;&#105;&#117;&#115;&#122;&#064;&#105;&#111;&#115;&#100;&#101;&#118;&#046;&#110;&#121;&#099;"></a>
+    
+    
+  </div>
+  <div class="right">
+    
+    
+    
+  </div>
+</div>
+<div class="clearfix"></div>
+ 
+            
+        </div>
+    </div>
+</header>
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+<div class="post-header mb2">
+    <div class="title">
+        <h1>Dealing with Swift's Pyramid of Doom</h1>
+        <span class="post-meta">May 9, 2016</span><br>
+        
+        <span class="post-meta small">7 minute read</span>
+    </div>
+</div>
+
+<article class="post-content">
+  <p><strong>Update, 07 Feb 2017</strong><br>
+As of Swift 3, some of the code below may not work properly anymore. To see what changed, read <a href="/blog/let-guard-pyramid-of-doom-swift-3/">Pyramid of Doom Updated (Swift 3)</a>.</p>
+
+<hr>
+
+<p><strong>Original Post</strong></p>
+
+<p>Today we continue the topic of avoiding Swift’s <a href="http://blog.scottlogic.com/2014/12/08/swift-optional-pyramids-of-doom.html"><em>Pyramid of Doom</em></a> that we started in <a href="/blog/let-guard/">previous post</a>, on <code>guard</code> statement. <br>
+This time, we cover a feature from Swift 1.2 – it’s not a new thing, but still very handy and useful to have in your arsenal.</p>
+
+<p>Every now and then I see older code that does something like this:</p>
+<div class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="kd">func</span> <span class="nf">pyramidOfDoom</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">y</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">z</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="n">x</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">y</span> <span class="o">=</span> <span class="n">y</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">z</span> <span class="o">=</span> <span class="n">z</span> <span class="p">{</span>
+                <span class="c1">//do something with x, y and z</span>
+                <span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>It works and was necessary in Swift 1.0 (unless you added your own workaround for it).</p>
+
+<p>In Swift 1.2, <code>if let</code> allows unwrapping multiple optionals, which lets us rewrite previous example into</p>
+<div class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="kd">func</span> <span class="nf">noPyramid</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">y</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">z</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">z</span> <span class="p">{</span>
+        <span class="c1">//do something with x, y and z</span>
+        <span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>So much better!</p>
+
+<p>What’s also useful and helpful for keeping your code clean, is the ability to add <code>where</code> clause to your optional binding. <br>
+It lets you check not only if optionals hold any value, but also if that value meets certain condition.</p>
+
+<p>Let’s take a look at code we would write normally, using <code>if</code> statement</p>
+<div class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="kd">func</span> <span class="nf">ifStatement</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">y</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">z</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">z</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">z</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">//do something with x, y and z</span>
+            <span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Assuming we need <code>z</code> to be less than <code>4</code> - code seems pretty normal. Let’s rewrite it to use <code>where</code> clause</p>
+<div class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="kd">func</span> <span class="nf">whereClause</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">y</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">z</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">z</span> <span class="k">where</span> <span class="n">z</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="p">{</span>
+        <span class="c1">//do something with x, y and z</span>
+        <span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>One less level of code indentation and a bit cleaner code. You can add one where clause per each <code>let</code> statement</p>
+<div class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="kd">func</span> <span class="nf">multipleWhereClause</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">y</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">z</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="n">x</span> <span class="k">where</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">,</span>
+       <span class="k">let</span> <span class="nv">y</span> <span class="o">=</span> <span class="n">y</span> <span class="k">where</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">,</span>
+       <span class="k">let</span> <span class="nv">z</span> <span class="o">=</span> <span class="n">z</span> <span class="k">where</span> <span class="n">z</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="p">{</span>
+            <span class="c1">//do something with x, y and z</span>
+            <span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>which acts exactly the same as</p>
+<div class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="kd">func</span> <span class="nf">multipleWhereClause2</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">y</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?,</span> <span class="nv">z</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">z</span> <span class="k">where</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="o">&amp;&amp;</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="mi">3</span> <span class="o">&amp;&amp;</span> <span class="n">z</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="p">{</span>
+        <span class="c1">//do something with x, y and z</span>
+        <span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Which version to use? It’s mostly a matter of preference and depends what you think is easier to read.</p>
+
+<p>I prefer version #1, as it’s a bit more explicit and for the same reason I advise you do the same – if you can add more readability by spending few more seconds on typing additional <code>let</code> statements – do so, people reading your code later will be grateful.</p>
+
+<p>One important note to remember, is that assignment and unwrapping happens before the condition in <code>where</code> clause is checked. <br>
+This means, if your condition is unrelated to unwrapped variables – it might be better to check the condition first. Why?</p>
+<div class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="kd">func</span> <span class="nf">expensiveFunction</span><span class="p">(</span><span class="nv">startWith</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span><span class="p">?</span> <span class="p">{</span>
+    <span class="c1">//despite what you see here</span>
+    <span class="c1">//it is really expensive to call this function!</span>
+    <span class="k">return</span> <span class="n">startWith</span> <span class="o">*</span> <span class="mi">2</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">isTodayThursday</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+    <span class="c1">//I'm writing it on Tuesday, so we can optimize ;)</span>
+    <span class="k">return</span> <span class="kc">false</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">expensiveUnwrapping</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="nf">expensiveFunction</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">y</span> <span class="o">=</span> <span class="nf">expensiveFunction</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="k">where</span> <span class="nf">isTodayThursday</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>It matters how do we get our optional values. If, as in the example above, they come from a function that is really expensive to call – it would be smart to call it only if we can be sure that returned value will actually be used.</p>
+
+<p>In the example above, our expensive function is being called twice, even though we don’t even get to use <code>x</code> and <code>y</code> variables.</p>
+
+<p>For similar cases, you might use the fact that we are allowed to use one logic statement (outside of <code>where</code> clause) as long as it’s the first clause in the <code>if let</code> statement</p>
+<div class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="kd">func</span> <span class="nf">unexpensiveUnwrapping</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nf">isTodayThursday</span><span class="p">(),</span> <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="nf">expensiveFunction</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">y</span> <span class="o">=</span> <span class="nf">expensiveFunction</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>This way our expensive functions will be called only if our initial logic clause is <code>true</code> (according to answer by Chris Lattner on <a href="https://groups.google.com/forum/#!topic/swift-language/TKQ2IOXR6AQ">google groups</a>).</p>
+
+<p>Adding one logic clause at the beginning, works exactly the same with <code>guard</code> statement</p>
+<div class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="kd">func</span> <span class="nf">guardUnexpensive</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">guard</span> <span class="nf">isTodayThursday</span><span class="p">(),</span> <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="nf">expensiveFunction</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">y</span> <span class="o">=</span> <span class="nf">expensiveFunction</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="nf">print</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>That’s it for now. In one of the next articles I will go into pattern matching and I’ll explain why following statements produce exactly same results. Stay tuned!</p>
+<div class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="k">if</span> <span class="k">let</span> <span class="nv">x</span> <span class="o">=</span> <span class="n">x</span> <span class="p">{</span>
+    <span class="nf">printSomething</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">if</span> <span class="k">case</span> <span class="k">let</span> <span class="nv">x</span><span class="p">?</span> <span class="o">=</span> <span class="n">x</span> <span class="p">{</span>
+    <span class="nf">printSomething</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">if</span> <span class="k">case</span> <span class="o">.</span><span class="kt">Some</span><span class="p">(</span><span class="k">let</span> <span class="nv">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span> <span class="p">{</span>
+    <span class="nf">printSomething</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div>
+</article>
+
+
+    <script src="/js/kudosplease-min.js"></script>
+<link rel="stylesheet" href="/css/kudosplease-min.css">
+
+<div class="kudos" data-amount="0" data-url="iosdev.nyc/blog/if-let-where/"></div>
+<script>
+new KudosPlease({
+    el : '.kudos',
+    duration : 1500,
+    persistent : true,
+    status : {
+      alpha: 'fontelico-emo-shoot',
+      beta: 'fontelico-emo-shoot',
+      gamma: 'fontelico-emo-beer'
+    }
+});
+</script>
+ 
+
+
+
+  <div class="share-page">
+  Share this post!
+
+  <div class="share-links">
+    
+
+    
+      <a class="fa fa-twitter" href="https://twitter.com/intent/tweet?text=@lifcio&url=http://iosdev.nyc/blog/if-let-where/" rel="nofollow" target="_blank" title="Share on Twitter"></a>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+      <a class="fa fa-reddit" href="http://reddit.com/submit?url=http://iosdev.nyc/blog/if-let-where/&title=Dealing with Swift's Pyramid of Doom" rel="nofollow" target="_blank" title="Share on Reddit"></a>
+    
+
+    
+      <a class="fa fa-stumbleupon" href="http://www.stumbleupon.com/submit?url=http://iosdev.nyc/blog/if-let-where/&title=Dealing with Swift's Pyramid of Doom" rel="nofollow" target="_blank" title="Share on StumbleUpon"></a>
+    
+  </div>
+</div>
+
+
+
+
+  <div class="py2 post-footer">
+  <img src="/images/avatar-2-Circle-256.png" alt="Mariusz Wisniewski" class="avatar" />
+  <p>
+      Mariusz Wisniewski at iOSDev.NYC
+  </p>
+    
+  <p>
+    Follow me on <a href="https://twitter.com/lifcio">Twitter</a>.
+  </p>
+    
+</div>
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'iosdevnyc';
+    var disqus_identifier = '/blog/if-let-where';
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+  <h3 class="related-post-title">Related Posts</h3>
+  
+    <div class="post ml2">
+      <a href="/blog/credit-card-validation/" class="post-link">
+        <h4 class="post-title">Credit Card Validation</h4>
+        <p class="post-summary">Credit Card validation isn't as hard as it looks -- and you can add it to your app in a few minutes only!</p>
+      </a>
+    </div>
+  
+    <div class="post ml2">
+      <a href="/blog/function-currying-swift/" class="post-link">
+        <h4 class="post-title">Swifty function currying</h4>
+        <p class="post-summary">Function currying is something I wanted to dig into for some time now, and finally I found a good time for it, especially now, after some changes introduced to the syntax in Swift 3.</p>
+      </a>
+    </div>
+  
+    <div class="post ml2">
+      <a href="/blog/let-guard-pyramid-of-doom-swift-3/" class="post-link">
+        <h4 class="post-title">Pyramid of Doom Updated (Swift 3)</h4>
+        <p class="post-summary">Since last posts about using `let` and `guard`, Swift 3 came out and changed a few things here and there. Let's see what's new!</p>
+      </a>
+    </div>
+  
+    <div class="post ml2">
+      <a href="/blog/let-guard/" class="post-link">
+        <h4 class="post-title">Let and guard statements in Swift</h4>
+        <p class="post-summary">Swift 2 was announced in June, soon to be a year ago. Still, some of the concepts it introduced are new to many iOS developers.</p>
+      </a>
+    </div>
+  
+
+
+      </div>
+    </div>
+  </div>
+  <footer class="footer">
+    <div class="p2 wrap">
+        <div class="measure mt1 left">
+            <small>
+                <a href=http://iosdev.nyc>iOSDev.NYC</a> by Mariusz Wisniewski 2017
+            </small>
+        </div>
+        <div class="measure mt1 right" style="overflow: hidden;">
+        	<a href="https://mixpanel.com/f/partner" rel="nofollow">
+            	<img
+            		src="//cdn.mxpnl.com/site_media/images/partner/badge_light.png"
+            		alt="Mobile Analytics" />
+            </a>
+        </div>
+    </div>
+</footer>
+
+
+<script>
+    (function (f, b) {
+    if (!b.__SV) {
+        var a, e, i, g;
+        window.mixpanel = b;
+        b._i = [];
+        b.init = function (a, e, d) {
+            function f(b, h) {
+                var a = h.split(".");
+                2 == a.length && (b = b[a[0]], h = a[1]);
+                b[h] = function () {
+                    b.push([h].concat(Array.prototype.slice.call(arguments, 0)))
+                }
+            }
+            var c = b;
+            "undefined" !== typeof d ? c = b[d] = [] : d = "mixpanel";
+            c.people = c.people || [];
+            c.toString = function (b) {
+                var a = "mixpanel";
+                "mixpanel" !== d && (a += "." + d);
+                b || (a += " (stub)");
+                return a
+            };
+            c.people.toString = function () {
+                return c.toString(1) + ".people (stub)"
+            };
+            i = "disable track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+            for (g = 0; g < i.length; g++) f(c, i[g]);
+            b._i.push([a, e, d])
+        };
+        b.__SV = 1.2;
+        a = f.createElement("script");
+        a.type = "text/javascript";
+        a.async = !0;
+        a.src = "undefined" !== typeof MIXPANEL_CUSTOM_LIB_URL ? MIXPANEL_CUSTOM_LIB_URL : "//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
+        e = f.getElementsByTagName("script")[0];
+        e.parentNode.insertBefore(a, e)
+    }
+})(document, window.mixpanel || []);
+
+mixpanel.init('eb65c3c4826337ea9a090080451ad889');
+
+mixpanel.track('Viewed Website', {
+	'Page Title':'Dealing with Swift's Pyramid of Doom',
+	'Page URL' : '/blog/if-let-where/',
+	'Page Categories' : 'iOS,Swift',
+	'Page Tags' : ''});
+</script>
+
+
+<script>
+    (function (i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r;
+        i[r] = i[r] || function () {
+            (i[r].q = i[r].q || []).push(arguments)
+        }, i[r].l = 1 * new Date();
+        a = s.createElement(o),
+            m = s.getElementsByTagName(o)[0];
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+	ga('create', 'UA-64343124-1', 'auto');
+
+    ga('send', {
+  		hitType: 'pageview',
+  		page: '/blog/if-let-where/',
+  		title: 'Dealing with Swift's Pyramid of Doom'
+	});
+</script>
+
+
+</body>
+</html>
