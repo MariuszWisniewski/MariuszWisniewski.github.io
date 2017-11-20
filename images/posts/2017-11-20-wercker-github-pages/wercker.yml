@@ -1,0 +1,31 @@
+box: ruby
+build:
+  steps:
+    # Go into site folder and install dependencies defined in Gemfile
+    - script:
+        name: Install bundle
+        code: |
+          bundle install
+
+    # Set production environment and build
+    # Generate the jekyll site with trace information on.
+    # And store the result in the $WERCKER_OUTPUT_DIR, the
+    # directory that is shared with the deployment pipeline.
+    - script:
+        name: Build Jekyll Page
+        code: |
+          JEKYLL_ENV=production bundle exec jekyll build --trace --destination $WERCKER_OUTPUT_DIR
+
+deploy:
+  steps:
+    - add-ssh-key:
+        keyname: SSH_DEPLOY
+        host: github.com
+    - add-to-known_hosts:
+        hostname: github.com
+        fingerprint: 16:27:ac:a5:76:28:2d:36:63:1b:56:4d:eb:df:a6:48
+    - leipert/git-push@0.7.6:
+         host: github.com
+         repo: username/username.github.io
+         branch: master
+         basedir: .

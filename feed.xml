@@ -7,6 +7,230 @@
     <atom:link href="http://iosdev.nyc/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
+        <title>GitHub Pages and Wercker Deploy</title>
+        <description>&lt;p&gt;In this post, I&amp;rsquo;ll help you set up automatic website deployment to free GitHub Pages hosting, using &lt;a href=&quot;http://www.wercker.com&quot;&gt;Wercker&lt;/a&gt; (also free!).&lt;/p&gt;
+
+&lt;p&gt;Recently, my website was down for a few weeks, after I stopped &lt;a href=&quot;https://www.bitballoon.com/pricing&quot;&gt;BitBallon&lt;/a&gt; subscription. This time I wanted to try one of the free alternatives.&lt;/p&gt;
+
+&lt;p&gt;I also wanted to learn something new in the process &amp;ndash; that&amp;rsquo;s why I didn&amp;rsquo;t want to GitHub for building my Jekyll blog and that&amp;rsquo;s how I stumbled upon Wercker. &lt;/p&gt;
+
+&lt;h1 id=&quot;build-your-website&quot;&gt;Build your website&lt;/h1&gt;
+
+&lt;p&gt;I won&amp;rsquo;t cover building your website in details here. This is something requiring a separate post, or better, a series of posts, so I hope a website is something you already have.&lt;/p&gt;
+
+&lt;p&gt;In my case, I&amp;rsquo;m using &lt;a href=&quot;https://jekyllrb.com&quot;&gt;Jekyll&lt;/a&gt; with &lt;a href=&quot;https://github.com/johnotander/pixyll&quot;&gt;Pixyll theme&lt;/a&gt;, with a few minor changes.&lt;/p&gt;
+
+&lt;p&gt;If you&amp;rsquo;re not a fan of Jekyll, here&amp;rsquo;s a short list of some other frameworks I was considering:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;http://wintersmith.io&quot;&gt;http://wintersmith.io&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://assemble.io&quot;&gt;http://assemble.io&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.gatsbyjs.org&quot;&gt;https://www.gatsbyjs.org&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://hexo.io&quot;&gt;https://hexo.io&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://gohugo.io&quot;&gt;http://gohugo.io&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;github-pages&quot;&gt;GitHub Pages&lt;/h1&gt;
+
+&lt;p&gt;To host your website on GitHub pages, the easiets way is to create a repo named &lt;code&gt;YOUR-GITHUB-USERNAME.github.io&lt;/code&gt; and store your website on the master branch (you can &lt;a href=&quot;https://github.com/MariuszWisniewski/MariuszWisniewski.github.io&quot;&gt;see mine here&lt;/a&gt;).&lt;/p&gt;
+
+&lt;p&gt;This is where Wercker will push your website after building it.&lt;/p&gt;
+
+&lt;h1 id=&quot;wercker&quot;&gt;Wercker&lt;/h1&gt;
+
+&lt;h2 id=&quot;build-website-script&quot;&gt;Build website script&lt;/h2&gt;
+
+&lt;p&gt;First, prepare a piece of code which you will use to build your website as if you were building it for the first time. It might be only a one-liner, just write it down somewhere as we will use it in a minute.&lt;/p&gt;
+
+&lt;p&gt;In my case (using Jekyll) website it&amp;rsquo;s:&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;bundle install
+&lt;span class=&quot;nv&quot;&gt;JEKYLL_ENV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;production bundle &lt;span class=&quot;nb&quot;&gt;exec &lt;/span&gt;jekyll build --trace
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;em&gt;(I set jekyll env variable here, which you might not need &amp;ndash; my website behaves differently when it comes to analytics in development/production mode, so before building for deployment, I always switch to production)&lt;/em&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;add-wercker-app&quot;&gt;Add Wercker app&lt;/h2&gt;
+
+&lt;p&gt;Create an account on &lt;a href=&quot;http://www.wercker.com&quot;&gt;Wercker website&lt;/a&gt;. After you create it, it should ask you whether to create your first app. If it won&amp;rsquo;t, just this &lt;a href=&quot;https://app.wercker.com/applications/create&quot;&gt;create new app link&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;It will ask you where you keep your website source code (GitHub or BitBucket), and which access configuration you choose (I went with default one).&lt;/p&gt;
+
+&lt;p&gt;Click finish (you don&amp;rsquo;t have to make your app public) and continue to configuring your workflow.&lt;/p&gt;
+
+&lt;p&gt;You should end up on &lt;code&gt;Runs&lt;/code&gt; tab, which for now asks you to add &lt;code&gt;wercker.yml&lt;/code&gt; file to your repo.&lt;/p&gt;
+
+&lt;p&gt;Here&amp;rsquo;s the one I used:&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;box: ruby
+build:
+  steps:
+    &lt;span class=&quot;c&quot;&gt;# Go into site folder and install dependencies defined in Gemfile&lt;/span&gt;
+    - script:
+        name: Install bundle
+        code: |
+          bundle install
+
+    &lt;span class=&quot;c&quot;&gt;# Set production environment and build&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# Generate the jekyll site with trace information on.&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# And store the result in the $WERCKER_OUTPUT_DIR, the&lt;/span&gt;
+    &lt;span class=&quot;c&quot;&gt;# directory that is shared with the deployment pipeline.&lt;/span&gt;
+    - script:
+        name: Build Jekyll Page
+        code: |
+          &lt;span class=&quot;nv&quot;&gt;JEKYLL_ENV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;production bundle &lt;span class=&quot;nb&quot;&gt;exec &lt;/span&gt;jekyll build --trace --destination &lt;span class=&quot;nv&quot;&gt;$WERCKER_OUTPUT_DIR&lt;/span&gt;
+
+deploy:
+  steps:
+    - add-ssh-key:
+        keyname: SSH_DEPLOY
+        host: github.com
+    - add-to-known_hosts:
+        hostname: github.com
+        fingerprint: 16:27:ac:a5:76:28:2d:36:63:1b:56:4d:eb:df:a6:48
+    - leipert/git-push@0.7.6:
+         host: github.com
+         repo: username/username.github.io
+         branch: master
+         basedir: .
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;(you can also &lt;a href=&quot;wercker.yml&quot;&gt;download the file here&lt;/a&gt;)&lt;/p&gt;
+
+&lt;h3 id=&quot;wercker-configuration&quot;&gt;Wercker configuration&lt;/h3&gt;
+
+&lt;p&gt;Now we can dig into the config file.&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;box: ruby
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;a href=&quot;http://devcenter.wercker.com/docs/boxes&quot;&gt;Box&lt;/a&gt; defines the name of the image that will be used for building your website. You can use any Docker image here, I went with standard &lt;code&gt;ruby&lt;/code&gt; image.&lt;/p&gt;
+
+&lt;p&gt;We have two major steps:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;build&lt;/li&gt;
+&lt;li&gt;deploy&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;They are connected to Pipelines, which you can find in Wercker under Workflows tab.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/2017-11-20-wercker-github-pages/workflow_tab.png&quot; alt=&quot;Workflows Tab&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;As you can see on the website, you have only &lt;code&gt;build&lt;/code&gt; pipeline in there. Scroll down and click &lt;code&gt;Add new pipeline&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/2017-11-20-wercker-github-pages/new-pipeline.png&quot; alt=&quot;Add new pipeline&quot;&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Name&lt;/code&gt; &amp;ndash; Put here whatever you think best describes deployment phase;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;YML Pipeline name&lt;/code&gt; &amp;ndash; This has to be the name of the pipeline as defined in &lt;code&gt;wercker.yml&lt;/code&gt; file. In the file I provided to you it&amp;rsquo;s called &lt;code&gt;deploy&lt;/code&gt; so put the same name in here. If you&amp;rsquo;d like to name it differently you can do so, just remember to also change pipeline name in &lt;code&gt;yml&lt;/code&gt; file;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Hook type&lt;/code&gt; &amp;ndash; choose &lt;code&gt;default&lt;/code&gt; which will allow chaining this pipeline after &lt;code&gt;build&lt;/code&gt; step.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Go back to Workflows tab and click plus button next to &lt;code&gt;build&lt;/code&gt; pipeline in the Editor.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/2017-11-20-wercker-github-pages/plus-button-build.png&quot; alt=&quot;Build plus button&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;The only thing you should change now is &lt;code&gt;Execute pipeline&lt;/code&gt; &amp;ndash; click on the field, select &lt;code&gt;deploy&lt;/code&gt; and confirm by clicking &lt;code&gt;Add&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/2017-11-20-wercker-github-pages/new-pipeline-workflow.png&quot; alt=&quot;Add deploy pipeline to Workflow&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;This assures that after our website builds it deploys automatically to our GitHub repo.&lt;/p&gt;
+
+&lt;h3 id=&quot;build-pipeline&quot;&gt;Build pipeline&lt;/h3&gt;
+
+&lt;p&gt;&lt;em&gt;(I removed comments from the file below for clarity)&lt;/em&gt;&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;build:
+  steps:
+    - script:
+        name: Install bundle
+        code: |
+          bundle install
+
+    - script:
+        name: Build Jekyll Page
+        code: |
+          &lt;span class=&quot;nv&quot;&gt;JEKYLL_ENV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;production bundle &lt;span class=&quot;nb&quot;&gt;exec &lt;/span&gt;jekyll build --trace --destination &lt;span class=&quot;nv&quot;&gt;$WERCKER_OUTPUT_DIR&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;As you can see, build pipeline steps are quite simple.&lt;/p&gt;
+
+&lt;p&gt;We use custom scripts which consist of two parts &amp;ndash; script name that will be displayed on Wercker website during build pipeline and code that will be executed.&lt;/p&gt;
+
+&lt;p&gt;We have two scripts that could be easily combined into one, but in case of failure you will quicker see what failed.&lt;br&gt;
+We use here the script I asked you to prepare before, with just one small change &amp;ndash; as a build destination, we use &lt;code&gt;$WERCKER_OUTPUT_DIR&lt;/code&gt;, a variable that defines a folder that can be accessed also from &lt;code&gt;deploy&lt;/code&gt; pipeline.&lt;/p&gt;
+
+&lt;p&gt;If you use anything else than Jekyll &amp;ndash; replace jekyll build command with anything else that builds your website. Just remember to use &lt;code&gt;$WERCKER_OUTPUT_DIR&lt;/code&gt; as a destination for the build process.&lt;/p&gt;
+
+&lt;h3 id=&quot;deploy-pipeline&quot;&gt;Deploy pipeline&lt;/h3&gt;
+
+&lt;p&gt;We will start from creating an ssh for deploying your website to GitHub pages.&lt;/p&gt;
+
+&lt;p&gt;Go into Environment tab and click on &lt;code&gt;Generate SSH Key&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/2017-11-20-wercker-github-pages/environment-tab.png&quot; alt=&quot;Environment tab&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/2017-11-20-wercker-github-pages/generate-ssh-key.png&quot; alt=&quot;Generate SSH Key&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;As SSH Key name use &lt;code&gt;SSH_DEPLOY&lt;/code&gt; (the same name we used in &lt;code&gt;yml&lt;/code&gt; file), and click &lt;code&gt;Generate&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/2017-11-20-wercker-github-pages/generate-ssh-key-name.png&quot; alt=&quot;New SSH Key&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;Now you should see two positions under Environment tab:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;SSH_DEPLOY_PUBLIC&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;SSH_DEPLOY_PRIVATE&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Copy value under &lt;code&gt;SSH_DEPLOY_PUBLIC&lt;/code&gt; (it starts with &lt;code&gt;ssh-rsa&lt;/code&gt;) and go to your GitHub Pages repo prepared before (the one named &lt;code&gt;YOUR-GITHUB-USERNAME.github.io&lt;/code&gt;).&lt;/p&gt;
+
+&lt;p&gt;Go into repository Settings and then to &lt;code&gt;Deploy keys&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/2017-11-20-wercker-github-pages/github-go-to-deploy-keys.png&quot; alt=&quot;Go to GitHub Deploy Keys&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;Add a new deploy key &amp;ndash; you can name it however you want, I used &lt;code&gt;wercker-deploy-key&lt;/code&gt; so I can remember later what it was created for. &lt;br&gt;
+Remember to check &lt;code&gt;Allow write access&lt;/code&gt; box so Wercker can push to this repository. Into &lt;code&gt;Key&lt;/code&gt; field paste the value of &lt;code&gt;SSH_DEPLOY_PUBLIC&lt;/code&gt; key you copied from Wercker website.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/2017-11-20-wercker-github-pages/paste-wercker-deploy-key.png&quot; alt=&quot;Add new deploy key&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s get back to our &lt;code&gt;wercker.yml&lt;/code&gt; config file.&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;deploy:
+  steps:
+    - add-ssh-key:
+        keyname: SSH_DEPLOY
+        host: github.com
+    - add-to-known_hosts:
+        hostname: github.com
+        fingerprint: 16:27:ac:a5:76:28:2d:36:63:1b:56:4d:eb:df:a6:48
+    - leipert/git-push@0.7.6:
+         host: github.com
+         repo: username/username.github.io
+         branch: master
+         basedir: .
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;We have 3 steps in here:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Adding an SSH key that will be used to push to your repo. We already created this key and added it to GitHub so Wercker will be able to use it for pushing your website to GitHub repository;&lt;/li&gt;
+&lt;li&gt;Add to known hosts so Wercker environment will trust &lt;code&gt;github.com&lt;/code&gt; host&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://app.wercker.com/applications/53f202b50705e3656b000033/tab/details/&quot;&gt;Git-push&lt;/a&gt; (also can be &lt;a href=&quot;https://github.com/leipert/step-git-push&quot;&gt;found on GitHub&lt;/a&gt;). All you have to do is replace &lt;code&gt;username&lt;/code&gt; with your actual username on GitHub. In my case this step looks like this:&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;    - leipert/git-push@0.7.6:
+         host: github.com
+         repo: MariuszWisniewski/MariuszWisniewski.github.io
+         branch: master
+         basedir: .
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h1 id=&quot;summary&quot;&gt;Summary&lt;/h1&gt;
+
+&lt;p&gt;That&amp;rsquo;s it! &lt;/p&gt;
+
+&lt;p&gt;Now you can just push a new commit to the repository where you host source code for your website (the one you linked in the &lt;a href=&quot;#add-wercker-app&quot;&gt;Add Wercker app&lt;/a&gt; step).&lt;/p&gt;
+
+&lt;p&gt;Each new commit to this repo will build your website using the script provided in &lt;code&gt;build&lt;/code&gt; pipeline and will push it to GitHub Pages repository using &lt;code&gt;deploy&lt;/code&gt; pipeline.&lt;/p&gt;
+
+&lt;p&gt;Let me know if you have any questions. In case of doubts, feel free to leave a comment!&lt;/p&gt;
+</description>
+        <pubDate>Mon, 20 Nov 2017 04:00:00 -0500</pubDate>
+        <link>http://iosdev.nyc/blog/wercker-github-pages/</link>
+        <guid isPermaLink="true">http://iosdev.nyc/blog/wercker-github-pages/</guid>
+      </item>
+    
+      <item>
         <title>Credit Card Validation</title>
         <description>&lt;p&gt;When working on app recently, our payment processing provider, communicated to us that unfortunately they support only certain kinds of credit cards.&lt;/p&gt;
 
@@ -48,7 +272,7 @@
 
 &lt;p&gt;&lt;a href=&quot;https://github.com/DigitalForms/CCValidator&quot;&gt;https://github.com/DigitalForms/CCValidator&lt;/a&gt;&lt;/p&gt;
 </description>
-        <pubDate>Wed, 22 Feb 2017 09:00:00 +0000</pubDate>
+        <pubDate>Wed, 22 Feb 2017 04:00:00 -0500</pubDate>
         <link>http://iosdev.nyc/blog/credit-card-validation/</link>
         <guid isPermaLink="true">http://iosdev.nyc/blog/credit-card-validation/</guid>
       </item>
@@ -222,7 +446,7 @@ Other than the syntax of it looking a bit weird, I think it should be quite easy
 &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/library/content/documentation/Swift/Conceptual/Swift_Programming_Language/Closures.html&quot;&gt;Apple Closure docs&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </description>
-        <pubDate>Fri, 10 Feb 2017 16:00:00 +0000</pubDate>
+        <pubDate>Fri, 10 Feb 2017 11:00:00 -0500</pubDate>
         <link>http://iosdev.nyc/blog/function-currying-swift/</link>
         <guid isPermaLink="true">http://iosdev.nyc/blog/function-currying-swift/</guid>
       </item>
@@ -300,7 +524,7 @@ func swiftGuardStyleWhere(book: Book?, author: Author?, rating: Int) {
 
 &lt;p&gt;That&amp;rsquo;s really it &amp;ndash; when it comes to topics covered by previous two blog posts, nothing else changed. Make sure to get rid of &lt;code&gt;where&lt;/code&gt; clause from your &lt;code&gt;if&lt;/code&gt; statements and repeat &lt;code&gt;let&lt;/code&gt; for every sub-clause and you will be fine!&lt;/p&gt;
 </description>
-        <pubDate>Tue, 07 Feb 2017 06:00:00 +0000</pubDate>
+        <pubDate>Tue, 07 Feb 2017 01:00:00 -0500</pubDate>
         <link>http://iosdev.nyc/blog/let-guard-pyramid-of-doom-swift-3/</link>
         <guid isPermaLink="true">http://iosdev.nyc/blog/let-guard-pyramid-of-doom-swift-3/</guid>
       </item>
@@ -437,7 +661,7 @@ This means, if your condition is unrelated to unwrapped variables – it might b
     &lt;span class=&quot;nf&quot;&gt;printSomething&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
-        <pubDate>Mon, 09 May 2016 12:00:00 +0000</pubDate>
+        <pubDate>Mon, 09 May 2016 08:00:00 -0400</pubDate>
         <link>http://iosdev.nyc/blog/if-let-where/</link>
         <guid isPermaLink="true">http://iosdev.nyc/blog/if-let-where/</guid>
       </item>
@@ -534,7 +758,7 @@ As of Swift 3, some of the code below may not work properly anymore. To see what
 
 &lt;p&gt;You can find all code examples from the post on &lt;a href=&quot;https://gist.github.com/MariuszWisniewski/ef5744b6d39b87e0f32f&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
 </description>
-        <pubDate>Sun, 24 Apr 2016 12:00:00 +0000</pubDate>
+        <pubDate>Sun, 24 Apr 2016 08:00:00 -0400</pubDate>
         <link>http://iosdev.nyc/blog/let-guard/</link>
         <guid isPermaLink="true">http://iosdev.nyc/blog/let-guard/</guid>
       </item>
