@@ -7,12 +7,12 @@
     <atom:link href="http://iosdev.nyc/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
-        <title>GitHub Pages and Wercker Deploy</title>
+        <title>GitHub Pages and Automatic Deployment</title>
         <description>&lt;p&gt;In this post, I&amp;rsquo;ll help you set up automatic website deployment to free GitHub Pages hosting, using &lt;a href=&quot;http://www.wercker.com&quot;&gt;Wercker&lt;/a&gt; (also free!).&lt;/p&gt;
 
 &lt;p&gt;Recently, my website was down for a few weeks, after I stopped &lt;a href=&quot;https://www.bitballoon.com/pricing&quot;&gt;BitBallon&lt;/a&gt; subscription. This time I wanted to try one of the free alternatives.&lt;/p&gt;
 
-&lt;p&gt;I also wanted to learn something new in the process &amp;ndash; that&amp;rsquo;s why I didn&amp;rsquo;t want to GitHub for building my Jekyll blog and that&amp;rsquo;s how I stumbled upon Wercker. &lt;/p&gt;
+&lt;p&gt;I also wanted to learn something new in the process &amp;ndash; that&amp;rsquo;s why I didn&amp;rsquo;t want to use GitHub for building my Jekyll blog and that&amp;rsquo;s how I stumbled upon Wercker. &lt;/p&gt;
 
 &lt;h1 id=&quot;build-your-website&quot;&gt;Build your website&lt;/h1&gt;
 
