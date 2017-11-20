@@ -139,21 +139,23 @@
 
 <p>First, prepare a piece of code which you will use to build your website as if you were building it for the first time. It might be only a one-liner, just write it down somewhere as we will use it in a minute.</p>
 
-<p>In my case (using Jekyll) website it&rsquo;s:</p>
+<p>In my case (using Jekyll) it&rsquo;s:</p>
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">bundle install
 <span class="nv">JEKYLL_ENV</span><span class="o">=</span>production bundle <span class="nb">exec </span>jekyll build --trace
 </code></pre></div>
-<p><em>(I set jekyll env variable here, which you might not need &ndash; my website behaves differently when it comes to analytics in development/production mode, so before building for deployment, I always switch to production)</em></p>
+<blockquote>
+<p>I set jekyll environment variable here, which you might not need. My website behaves differently when it comes to analytics in development/production mode, so before building for deployment, I always switch to production.</p>
+</blockquote>
 
 <h2 id="add-wercker-app">Add Wercker app</h2>
 
-<p>Create an account on <a href="http://www.wercker.com">Wercker website</a>. After you create it, it should ask you whether to create your first app. If it won&rsquo;t, just this <a href="https://app.wercker.com/applications/create">create new app link</a>.</p>
+<p>Create an account on <a href="http://www.wercker.com">Wercker website</a>. After you create it, it should ask you to create your first app. If it won&rsquo;t, use this <a href="https://app.wercker.com/applications/create">create new app link</a>.</p>
 
-<p>It will ask you where you keep your website source code (GitHub or BitBucket), and which access configuration you choose (I went with default one).</p>
+<p>Choose where you keep your website source code (GitHub or BitBucket) and which access configuration you want (I went with the default one).</p>
 
 <p>Click finish (you don&rsquo;t have to make your app public) and continue to configuring your workflow.</p>
 
-<p>You should end up on <code>Runs</code> tab, which for now asks you to add <code>wercker.yml</code> file to your repo.</p>
+<p>You should end up on <code>Runs</code> tab, which will be asking you to add <code>wercker.yml</code> file to your repo.</p>
 
 <p>Here&rsquo;s the one I used:</p>
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">box: ruby
@@ -192,7 +194,7 @@ deploy:
 
 <h3 id="wercker-configuration">Wercker configuration</h3>
 
-<p>Now we can dig into the config file.</p>
+<p>Let&rsquo;s see how is the <code>wercker.yml</code> config file built.   </p>
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">box: ruby
 </code></pre></div>
 <p><a href="http://devcenter.wercker.com/docs/boxes">Box</a> defines the name of the image that will be used for building your website. You can use any Docker image here, I went with standard <code>ruby</code> image.</p>
@@ -214,11 +216,11 @@ deploy:
 
 <ul>
 <li><code>Name</code> &ndash; Put here whatever you think best describes deployment phase;</li>
-<li><code>YML Pipeline name</code> &ndash; This has to be the name of the pipeline as defined in <code>wercker.yml</code> file. In the file I provided to you it&rsquo;s called <code>deploy</code> so put the same name in here. If you&rsquo;d like to name it differently you can do so, just remember to also change pipeline name in <code>yml</code> file;</li>
-<li><code>Hook type</code> &ndash; choose <code>default</code> which will allow chaining this pipeline after <code>build</code> step.</li>
+<li><code>YML Pipeline name</code> &ndash; This has to be the name of the pipeline as defined in <code>wercker.yml</code> file. In the file I provided it&rsquo;s called <code>deploy</code> so put the same name in here. If you&rsquo;d like to name it differently you can do so, just remember to also change pipeline name in <code>yml</code> file;</li>
+<li><code>Hook type</code> &ndash; choose <code>default</code> which will allow chaining this pipeline after <code>build</code> phase.</li>
 </ul>
 
-<p>Go back to Workflows tab and click plus button next to <code>build</code> pipeline in the Editor.</p>
+<p>Go back to Workflows tab and click plus button next to the <code>build</code> pipeline in the Editor.</p>
 
 <p><img src="/images/posts/2017-11-20-wercker-github-pages/plus-button-build.png" alt="Build plus button"></p>
 
@@ -226,7 +228,7 @@ deploy:
 
 <p><img src="/images/posts/2017-11-20-wercker-github-pages/new-pipeline-workflow.png" alt="Add deploy pipeline to Workflow"></p>
 
-<p>This assures that after our website builds it deploys automatically to our GitHub repo.</p>
+<p>This assures that our website is deployed automatically to GitHub Pages repo after each build.</p>
 
 <h3 id="build-pipeline">Build pipeline</h3>
 
@@ -245,16 +247,16 @@ deploy:
 </code></pre></div>
 <p>As you can see, build pipeline steps are quite simple.</p>
 
-<p>We use custom scripts which consist of two parts &ndash; script name that will be displayed on Wercker website during build pipeline and code that will be executed.</p>
+<p>We use custom scripts which consist of two parts &ndash; script name that will be displayed on Wercker website during each pipeline phase and the code that will be executed.</p>
 
-<p>We have two scripts that could be easily combined into one, but in case of failure you will quicker see what failed.<br>
-We use here the script I asked you to prepare before, with just one small change &ndash; as a build destination, we use <code>$WERCKER_OUTPUT_DIR</code>, a variable that defines a folder that can be accessed also from <code>deploy</code> pipeline.</p>
+<p>We have two scripts that could be easily combined into one, but in case of failure you will see what failed faster with separate steps.<br>
+I used the script I asked you to prepare before, with just one small change &ndash; as a build destination, we use <code>$WERCKER_OUTPUT_DIR</code>, a variable that defines a folder that can be accessed also from <code>deploy</code> pipeline.</p>
 
 <p>If you use anything else than Jekyll &ndash; replace jekyll build command with anything else that builds your website. Just remember to use <code>$WERCKER_OUTPUT_DIR</code> as a destination for the build process.</p>
 
 <h3 id="deploy-pipeline">Deploy pipeline</h3>
 
-<p>We will start from creating an ssh for deploying your website to GitHub pages.</p>
+<p>We will start from creating an <code>ssh key</code> for deploying your website to GitHub pages.</p>
 
 <p>Go into Environment tab and click on <code>Generate SSH Key</code>.</p>
 
@@ -302,9 +304,9 @@ Remember to check <code>Allow write access</code> box so Wercker can push to thi
 <p>We have 3 steps in here:</p>
 
 <ol>
-<li>Adding an SSH key that will be used to push to your repo. We already created this key and added it to GitHub so Wercker will be able to use it for pushing your website to GitHub repository;</li>
+<li>Adding an SSH key that will be used to push to your repo. We already created this key and added it to GitHub repository settings, so Wercker will be able to use it for pushing your website;</li>
 <li>Add to known hosts so Wercker environment will trust <code>github.com</code> host</li>
-<li><a href="https://app.wercker.com/applications/53f202b50705e3656b000033/tab/details/">Git-push</a> (also can be <a href="https://github.com/leipert/step-git-push">found on GitHub</a>). All you have to do is replace <code>username</code> with your actual username on GitHub. In my case this step looks like this:</li>
+<li><a href="https://app.wercker.com/applications/53f202b50705e3656b000033/tab/details/">Git-push</a> (<a href="https://github.com/leipert/step-git-push">also on GitHub</a>). All you have to do is replace <code>username</code> with your actual username on GitHub. In my case this step looks like this:</li>
 </ol>
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">    - leipert/git-push@0.7.6:
          host: github.com
@@ -316,7 +318,7 @@ Remember to check <code>Allow write access</code> box so Wercker can push to thi
 
 <p>That&rsquo;s it! </p>
 
-<p>Now you can just push a new commit to the repository where you host source code for your website (the one you linked in the <a href="#add-wercker-app">Add Wercker app</a> step).</p>
+<p>Now you can push a new commit to the repository where you host source code for your website (the one you linked in the <a href="#add-wercker-app">Add Wercker app</a> step).</p>
 
 <p>Each new commit to this repo will build your website using the script provided in <code>build</code> pipeline and will push it to GitHub Pages repository using <code>deploy</code> pipeline.</p>
 
